@@ -16,11 +16,24 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode, requiredRole?: 'admin' | 'user' }) => {
   const { user, loading, role } = useAuth();
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   if (!user) return <Navigate to="/login" replace />;
 
   // Wait for role to be fetched before making decisions
-  if (requiredRole && !role) return null;
+  if (requiredRole && !role) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (requiredRole && role !== requiredRole) {
     if (role === 'user') return <Navigate to="/reports" replace />;
