@@ -26,13 +26,19 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode,
 
   if (!user) return <Navigate to="/login" replace />;
 
-  // Wait for role to be fetched before making decisions
-  if (requiredRole && !role) {
+  // Wait for role to be fetched before making decisions, but don't wait forever if loading is already done
+  if (requiredRole && !role && loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
+  }
+
+  // If loading is done but role is still missing (should not happen with default 'user'), permit entry if no role is required
+  // or redirect if it is required but still missing.
+  if (requiredRole && !role && !loading) {
+    return <Navigate to="/login" replace />;
   }
 
   if (requiredRole && role !== requiredRole) {

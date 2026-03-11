@@ -28,28 +28,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (error) {
             console.error('Error fetching role:', error);
-            return null;
+            return 'user';
         }
-        return data?.role || 'user';
+        return (data?.role as 'admin' | 'user') || 'user';
     };
 
     useEffect(() => {
-        const initializeAuth = async () => {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                setSession(session);
-                setUser(session?.user ?? null);
+        let mounted = true;
 
-                if (session?.user) {
-                    const userRole = await fetchRole(session.user.id);
-                    setRole(userRole);
-                } else {
-                    setRole(null);
+        const initializeAuth = async () => {
+            // Set a timeout to prevent infinite loading state
+            const timeoutId = setTimeout(() => {
+                if (mounted) {
+                    console.warn('Auth initialization timed out after 5s');
+                    setLoading(false);
+                }
+            }, 5000);
+
+            try {
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+                if (sessionError) throw sessionError;
+
+                if (mounted) {
+                    setSession(session);
+                    setUser(session?.user ?? null);
+
+                    if (session?.user) {
+                        const userRole = await fetchRole(session.user.id);
+                        setRole(userRole);
+                    } else {
+                        setRole(null);
+                    }
                 }
             } catch (error) {
                 console.error('Auth initialization error:', error);
             } finally {
-                setLoading(false);
+                clearTimeout(timeoutId);
+                if (mounted) {
+                    setLoading(false);
+                }
             }
         };
 
@@ -57,23 +75,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             try {
-                setSession(session);
-                setUser(session?.user ?? null);
+                if (mounted) {
+                    setSession(session);
+                    setUser(session?.user ?? null);
 
-                if (session?.user) {
-                    const userRole = await fetchRole(session.user.id);
-                    setRole(userRole);
-                } else {
-                    setRole(null);
+                    if (session?.user) {
+                        const userRole = await fetchRole(session.user.id);
+                        setRole(userRole);
+                    } else {
+                        setRole(null);
+                        setLoading(false);
+                    }
                 }
             } catch (error) {
                 console.error('Auth state change error:', error);
-            } finally {
-                setLoading(false);
+                if (mounted) setLoading(false);
             }
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            mounted = false;
+            subscription.unsubscribe();
+        };
     }, []);
 
     const signOut = async () => {
