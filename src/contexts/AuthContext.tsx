@@ -20,17 +20,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     const fetchRole = async (userId: string) => {
-        const { data, error } = await supabase
+        console.log(`[Auth] Fetching role for user ${userId}...`);
+
+        // Timeout for the database query
+        const rolePromise = supabase
             .from('profiles')
             .select('role')
             .eq('id', userId)
             .single();
 
-        if (error) {
-            console.error('Error fetching role:', error);
+        const timeoutPromise = new Promise<{ data: any, error: any }>((resolve) =>
+            setTimeout(() => {
+                console.warn('[Auth] Role fetch timed out after 3s');
+                resolve({ data: { role: 'user' }, error: null });
+            }, 3000)
+        );
+
+        try {
+            const { data, error } = await Promise.race([rolePromise, timeoutPromise]);
+
+            if (error) {
+                console.error('[Auth] Error fetching role:', error);
+                return 'user';
+            }
+            console.log('[Auth] Role fetched successfully:', data?.role || 'user');
+            return (data?.role as 'admin' | 'user') || 'user';
+        } catch (err) {
+            console.error('[Auth] Exception in fetchRole:', err);
             return 'user';
         }
-        return (data?.role as 'admin' | 'user') || 'user';
     };
 
     useEffect(() => {
@@ -46,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }, 5000);
 
             try {
+                console.log('[Auth] Initializing session...');
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
                 if (sessionError) throw sessionError;
@@ -73,7 +92,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         initializeAuth();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log(`[Auth] State changed: ${event}`, session ? 'User present' : 'No session');
             try {
                 if (mounted) {
                     setSession(session);
@@ -82,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     if (session?.user) {
                         const userRole = await fetchRole(session.user.id);
                         setRole(userRole);
+                        console.log('[Auth] UI unblocked after state change');
                         setLoading(false); // Unblock UI as soon as we have a user and role
                     } else {
                         setRole(null);

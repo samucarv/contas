@@ -16,25 +16,30 @@ export default function Login() {
 
     // Set a fallback timeout for the login request
     const timeoutId = setTimeout(() => {
+      console.warn('[Login] Submission timeout reached after 20s');
       setLoading(false);
       setError('A conexão com o servidor está demorando muito. Verifique sua rede ou tente novamente.');
-    }, 10000);
+    }, 20000);
 
     try {
+      console.log('[Login] Starting signInWithPassword...');
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log('[Login] Supabase response received', error ? 'with error' : 'successfully');
       clearTimeout(timeoutId);
 
       if (error) {
         setError(error.message);
         setLoading(false);
       } else {
+        console.log('[Login] Navigating to dashboard...');
         navigate('/dashboard');
       }
     } catch (err: any) {
+      console.error('[Login] Exception during sign in:', err);
       clearTimeout(timeoutId);
       setError(err.message || 'Ocorreu um erro inesperado ao tentar entrar.');
       setLoading(false);
