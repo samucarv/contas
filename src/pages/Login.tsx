@@ -14,16 +14,30 @@ export default function Login() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setError(error.message);
+    // Set a fallback timeout for the login request
+    const timeoutId = setTimeout(() => {
       setLoading(false);
-    } else {
-      navigate('/dashboard');
+      setError('A conexão com o servidor está demorando muito. Verifique sua rede ou tente novamente.');
+    }, 10000);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      setError(err.message || 'Ocorreu um erro inesperado ao tentar entrar.');
+      setLoading(false);
     }
   };
 

@@ -82,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     if (session?.user) {
                         const userRole = await fetchRole(session.user.id);
                         setRole(userRole);
+                        setLoading(false); // Unblock UI as soon as we have a user and role
                     } else {
                         setRole(null);
                         setLoading(false);
