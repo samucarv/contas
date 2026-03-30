@@ -1,6 +1,15 @@
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 import { useState, useEffect, useCallback } from 'react';
 import { Transaction, transactionService } from '../services/transactionService';
 import TransactionModal from '../components/TransactionModal';
+
+// Extend jsPDF with autotable plugin
+declare module 'jspdf' {
+    interface jsPDF {
+        autoTable: (options: any) => jsPDF;
+    }
+}
 
 const months = [
   { value: '1', label: 'Janeiro' },
@@ -68,6 +77,82 @@ export default function Dashboard() {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const monthLabel = months.find(m => m.value === currentMonth)?.label || '';
+
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59); // slate-800
+    doc.text(`Dashboard - Relatório Financeiro`, 14, 22);
+
+    doc.setFontSize(14);
+    doc.setTextColor(100, 116, 139); // slate-500
+    doc.text(`${monthLabel} ${currentYear}`, 14, 30);
+
+    // Sort: expenses first, then deductions
+    const sortedTransactions = [...transactions].sort((a, b) => {
+        if (a.type === b.type) return new Date(a.date).getTime() - new Date(b.date).getTime();
+        return a.type === 'expense' ? -1 : 1;
+    });
+
+    const tableData = sortedTransactions.map(t => [
+        new Date(t.date).toLocaleDateString('pt-BR'),
+        t.description,
+        t.type === 'expense' ? 'Despesa' : 'Desconto',
+        `${t.current_installment}/${t.total_installments}`,
+        formatCurrency(Number(t.amount))
+    ]);
+
+    doc.autoTable({
+        startY: 40,
+        head: [['Data', 'Descrição', 'Tipo', 'Parcela', 'Valor']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: {
+            fillColor: [59, 130, 246], // primary blue
+            fontSize: 10,
+            fontStyle: 'bold',
+            halign: 'left'
+        },
+        columnStyles: {
+            4: { halign: 'right' }
+        },
+        styles: {
+            fontSize: 9,
+            cellPadding: 4
+        }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+
+    // Background for summary
+    doc.setFillColor(248, 250, 252); // slate-50
+    doc.rect(14, finalY - 5, 182, 35, 'F');
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Total Despesas:`, 20, finalY + 5);
+    doc.setTextColor(30, 41, 59);
+    doc.text(`${formatCurrency(totalExpenses)}`, 190, finalY + 5, { align: 'right' });
+
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Total Descontos:`, 20, finalY + 12);
+    doc.setTextColor(180, 83, 9); // amber-700
+    doc.text(`- ${formatCurrency(totalDeductions)}`, 190, finalY + 12, { align: 'right' });
+
+    doc.setDrawColor(226, 232, 240);
+    doc.line(20, finalY + 17, 190, finalY + 17);
+
+    doc.setFontSize(12);
+    doc.setTextColor(30, 41, 59);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Saldo Final:`, 20, finalY + 25);
+    doc.text(`${formatCurrency(finalBalance)}`, 190, finalY + 25, { align: 'right' });
+
+    doc.save(`relatorio_dashboard_${monthLabel.toLowerCase()}_${currentYear}.pdf`);
+  };
+
 
   return (
     <div className="space-y-8">
@@ -266,7 +351,9 @@ export default function Dashboard() {
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Saldo remanescente após todos os descontos aplicados.</p>
               </div>
-              <button className="w-full bg-primary text-white py-3 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+              <button 
+                onClick={exportToPDF}
+                className="w-full bg-primary text-white py-3 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-[20px]">file_download</span>
                 Exportar Relatório PDF
               </button>
