@@ -129,7 +129,7 @@ export default function Login() {
             </div>
           </main>
           <footer className="px-6 md:px-20 py-8 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-background-dark/50">
-            <p className="text-xs text-slate-500 dark:text-slate-500">© 2024 Finanças Pessoais. Todos os direitos reservados.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-500">© 2026 Finanças Pessoais. Todos os direitos reservados.</p>
           </footer>
         </div>
       </div>
