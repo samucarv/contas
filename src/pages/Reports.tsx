@@ -2,14 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Transaction, transactionService } from '../services/transactionService';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
-
-// Extend jsPDF with autotable plugin
-declare module 'jspdf' {
-    interface jsPDF {
-        autoTable: (options: any) => jsPDF;
-    }
-}
+import autoTable from 'jspdf-autotable';
 
 const months = [
     { value: '1', label: 'Janeiro' },
@@ -78,7 +71,7 @@ export default function Reports() {
             formatCurrency(Number(t.amount))
         ]);
 
-        doc.autoTable({
+        autoTable(doc, {
             startY: 40,
             head: [['Data', 'Descrição', 'Tipo', 'Parcela', 'Valor']],
             body: tableData,
