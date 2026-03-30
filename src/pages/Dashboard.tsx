@@ -6,9 +6,9 @@ import TransactionModal from '../components/TransactionModal';
 
 // Extend jsPDF with autotable plugin
 declare module 'jspdf' {
-    interface jsPDF {
-        autoTable: (options: any) => jsPDF;
-    }
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+  }
 }
 
 const months = [
@@ -92,36 +92,36 @@ export default function Dashboard() {
 
     // Sort: expenses first, then deductions
     const sortedTransactions = [...transactions].sort((a, b) => {
-        if (a.type === b.type) return new Date(a.date).getTime() - new Date(b.date).getTime();
-        return a.type === 'expense' ? -1 : 1;
+      if (a.type === b.type) return new Date(a.date).getTime() - new Date(b.date).getTime();
+      return a.type === 'expense' ? -1 : 1;
     });
 
     const tableData = sortedTransactions.map(t => [
-        new Date(t.date).toLocaleDateString('pt-BR'),
-        t.description,
-        t.type === 'expense' ? 'Despesa' : 'Desconto',
-        `${t.current_installment}/${t.total_installments}`,
-        formatCurrency(Number(t.amount))
+      new Date(t.date).toLocaleDateString('pt-BR'),
+      t.description,
+      t.type === 'expense' ? 'Despesa' : 'Desconto',
+      `${t.current_installment}/${t.total_installments}`,
+      formatCurrency(Number(t.amount))
     ]);
 
     doc.autoTable({
-        startY: 40,
-        head: [['Data', 'Descrição', 'Tipo', 'Parcela', 'Valor']],
-        body: tableData,
-        theme: 'striped',
-        headStyles: {
-            fillColor: [59, 130, 246], // primary blue
-            fontSize: 10,
-            fontStyle: 'bold',
-            halign: 'left'
-        },
-        columnStyles: {
-            4: { halign: 'right' }
-        },
-        styles: {
-            fontSize: 9,
-            cellPadding: 4
-        }
+      startY: 40,
+      head: [['Data', 'Descrição', 'Tipo', 'Parcela', 'Valor']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [59, 130, 246], // primary blue
+        fontSize: 10,
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      columnStyles: {
+        4: { halign: 'right' }
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 4
+      }
     });
 
     const finalY = (doc as any).lastAutoTable.finalY + 15;
@@ -351,7 +351,7 @@ export default function Dashboard() {
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Saldo remanescente após todos os descontos aplicados.</p>
               </div>
-              <button 
+              <button
                 onClick={exportToPDF}
                 className="w-full bg-primary text-white py-3 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-[20px]">file_download</span>
